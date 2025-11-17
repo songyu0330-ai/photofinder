@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>포토 파인더</title>
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+{
+  "short_name": "PhotoFinder",
+  "name": "포토 파인더",
+  "icons": [
+    { "src": "favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#3b82f6"
+}
+{
+  "name": "photo-finder-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^10.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.3.3",
+    "vite": "^4.5.9",
+    "@vitejs/plugin-react": "^4.0.0"
+  }
+}
+module.exports = {
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  theme: { extend: {} },
+  plugins: [],
+};
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+});
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Tourist from "./pages/Tourist";
+import Couple from "./pages/Couple";
+import Hidden from "./pages/Hidden";
+import Login from "./components/Login";
+import UploadForm from "./components/UploadForm";
+
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/upload" element={<UploadForm />} />
+        <Route path="/" element={<Tourist />} />
+        <Route path="/couple" element={<Couple />} />
+        <Route path="/hidden" element={<Hidden />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "YOUR_FIREBASE_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+import React, { useState, useEffect } from "react";
+import { auth } from "../firebase";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
+
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try { await signInWithEmailAndPassword(auth, email, password); alert("로그인 성공!"); }
+    catch (err) { alert(err.message); }
+  };
+
+  const handleSignUp = async () => {
+    try { await createUserWithEmailAndPassword(auth, email, password); alert("회원가입 성공!"); }
+    catch (err) { alert(err.message); }
+  };
+
+  const handleLogout = async () => {
+    try { await signOut(auth); alert("로그아웃 완료!"); }
+    catch (err) { alert(err.message); }
+  };
+
+  if (user) return (
+    <div className="p-4 max-w-sm mx-auto mt-10 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">안녕하세요, {user.email}</h2>
+      <button className="w-full bg-red-500 text-white p-2 rounded" onClick={handleLogout}>로그아웃</button>
+    </div>
+  );
+
+  return (
+    <div className="p-4 max-w-sm mx-auto mt-10 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">로그인 / 회원가입</h2>
+      <input type="email" placeholder="이메일" className="w-full p-2 mb-2 border rounded" value={email} onChange={(e)=>setEmail(e.target.value)}/>
+      <input type="password" placeholder="비밀번호" className="w-full p-2 mb-2 border rounded" value={password} onChange={(e)=>setPassword(e.target.value)}/>
+      <button className="w-full bg-blue-500 text-white p-2 rounded mb-2" onClick={handleLogin}>로그인</button>
+      <button className="w-full bg-green-500 text-white p-2 rounded" onClick={handleSignUp}>회원가입</button>
+    </div>
+  );
+}
